@@ -7,12 +7,8 @@ import {
   StandingsEntry,
   RACE_POINTS,
   FASTEST_LAP_POINTS,
-  CrateType,
 } from '@f1champ/shared';
 import { CarService } from './car.service';
-import { PilotService } from './pilot.service';
-import { QualificationService } from './qualification.service';
-import { CrateService } from './crate.service';
 
 export class RaceService {
   /**
@@ -80,14 +76,6 @@ export class RaceService {
    * Провести гонку
    */
   static async runRace(raceId: number): Promise<RaceResult[]> {
-    // Проверяем, есть ли квалификация
-    let qualificationResults = await QualificationService.getQualificationResults(raceId);
-
-    if (qualificationResults.length === 0) {
-      // Проводим квалификацию
-      qualificationResults = await QualificationService.runQualification(raceId);
-    }
-
     // Обновляем статус гонки
     await query(
       "UPDATE races SET status = $1 WHERE id = $2",
@@ -95,17 +83,12 @@ export class RaceService {
     );
 
     // Получаем все команды
-    const teamsResult = await query('SELECT id, pilot1_id, pilot2_id FROM teams');
+    const teamsResult = await query('SELECT id FROM teams');
     const teams = teamsResult.rows;
 
     if (teams.length === 0) {
       throw new Error('No teams to race');
     }
-
-    // Создаем карту позиций квалификации
-    const qualificationPositions = new Map(
-      qualificationResults.map((q) => [q.teamId, q.position])
-    );
 
     // Рассчитываем результаты для каждой команды
     const raceResults: Array<{
@@ -118,45 +101,14 @@ export class RaceService {
     for (const team of teams) {
       const stats = await CarService.calculateCarStats(team.id);
 
-      // Учитываем пилотов
-      let pilotBonus = 0;
-      let pilotConsistency = 50;
-      if (team.pilot1_id) {
-        const pilot1 = await PilotService.getPilotById(team.pilot1_id);
-        if (pilot1) {
-          pilotBonus += pilot1.skill * 0.4 + pilot1.experience * 0.3;
-          pilotConsistency = Math.max(pilotConsistency, pilot1.consistency);
-        }
-      }
-      if (team.pilot2_id) {
-        const pilot2 = await PilotService.getPilotById(team.pilot2_id);
-        if (pilot2) {
-          pilotBonus += pilot2.skill * 0.4 + pilot2.experience * 0.3;
-          pilotConsistency = Math.max(pilotConsistency, pilot2.consistency);
-        }
-      }
+      // Случайность: 70% зависит от характеристик, 30% от случайности
+      const randomFactor = Math.random() * 0.3;
+      const performanceFactor = (stats.overallRating / 650) * 0.7; // 650 - максимальная сумма всех характеристик
+      const totalScore = (performanceFactor + randomFactor) * 1000;
 
-      // Средний бонус от пилотов
-      if (pilotBonus > 0) {
-        pilotBonus = pilotBonus / (team.pilot1_id && team.pilot2_id ? 2 : 1);
-      }
-
-      // Бонус от позиции на старте (квалификация)
-      const qualPosition = qualificationPositions.get(team.id) || teams.length;
-      const gridBonus = (teams.length - qualPosition) * 10; // Лучшая позиция = больше бонус
-
-      // Характеристики машины: 50%, пилоты: 30%, квалификация: 10%, случайность: 10%
-      const randomFactor = Math.random() * 0.1;
-      const performanceFactor = (stats.overallRating / 650) * 0.5;
-      const pilotFactor = (pilotBonus / 100) * 0.3;
-      const gridFactor = (gridBonus / (teams.length * 10)) * 0.1;
-
-      const totalScore = (performanceFactor + pilotFactor + gridFactor + randomFactor) * 1000;
-
-      // Шанс DNF зависит от надежности и стабильности пилота
-      const reliabilityFactor = stats.totalReliability / 450;
-      const consistencyFactor = pilotConsistency / 100;
-      const dnfChance = Math.max(0.03, 0.25 - reliabilityFactor * 0.15 - consistencyFactor * 0.05);
+      // Шанс DNF зависит от надежности (чем выше, тем меньше шанс)
+      const reliabilityFactor = stats.totalReliability / 450; // 450 - максимальная надежность
+      const dnfChance = Math.max(0.05, 0.3 - reliabilityFactor * 0.25); // от 5% до 30%
 
       const dnf = Math.random() < dnfChance;
       const dnfReasons = [
@@ -165,7 +117,6 @@ export class RaceService {
         'Повреждение шасси',
         'Проблемы с трансмиссией',
         'Авария',
-        'Ошибка пилота',
       ];
 
       raceResults.push({
@@ -200,21 +151,6 @@ export class RaceService {
       );
 
       results.push(this.mapRowToRaceResult(dbResult.rows[0]));
-
-      // Выдаем призовые кейсы за топ-3
-      if (!result.dnf) {
-        try {
-          if (position === 1) {
-            await CrateService.createPrizeCrate(result.teamId, CrateType.GOLD);
-          } else if (position === 2) {
-            await CrateService.createPrizeCrate(result.teamId, CrateType.SILVER);
-          } else if (position === 3) {
-            await CrateService.createPrizeCrate(result.teamId, CrateType.BRONZE);
-          }
-        } catch (error) {
-          console.error('Error creating prize crate:', error);
-        }
-      }
     }
 
     // Обновляем статус гонки

@@ -1,5 +1,6 @@
 import { query } from './index';
 import { ComponentType } from '@f1champ/shared';
+import { generatePilotPool } from '../utils/pilot-generator';
 
 // Начальные компоненты для игры
 const seedComponents = async () => {
@@ -83,9 +84,37 @@ const seedSeason = async () => {
   console.log('Initial season created!');
 };
 
+// Создание пулов пилотов
+const seedPilots = async () => {
+  console.log('Seeding pilots...');
+
+  const pilots = generatePilotPool(100); // Создаем 100 пилотов
+
+  for (const pilot of pilots) {
+    await query(
+      `INSERT INTO pilots (first_name, last_name, level, skill, experience, consistency, aggression, cost)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT DO NOTHING`,
+      [
+        pilot.firstName,
+        pilot.lastName,
+        pilot.level,
+        pilot.skill,
+        pilot.experience,
+        pilot.consistency,
+        pilot.aggression,
+        pilot.cost,
+      ]
+    );
+  }
+
+  console.log('Pilots seeded successfully!');
+};
+
 export const seedDatabase = async () => {
   try {
     await seedComponents();
+    await seedPilots();
     await seedSeason();
     console.log('Database seeded successfully!');
   } catch (error) {

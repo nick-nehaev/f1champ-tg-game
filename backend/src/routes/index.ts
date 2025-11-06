@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { PlayerController } from '../controllers/player.controller';
 import { CarController } from '../controllers/car.controller';
 import { RaceController } from '../controllers/race.controller';
+import { PilotController } from '../controllers/pilot.controller';
+import { CrateController } from '../controllers/crate.controller';
+import { ReferralController } from '../controllers/referral.controller';
 import { devAuth } from '../middleware/auth';
 
 const router = Router();
@@ -19,6 +22,22 @@ router.get('/car/components', CarController.getAllComponents);
 router.get('/car/team-components', CarController.getTeamComponents);
 router.post('/car/buy', CarController.buyComponent);
 router.put('/car', CarController.updateCar);
+
+// Pilot routes
+router.get('/pilots', PilotController.getAllPilots);
+router.get('/pilots/team', PilotController.getTeamPilots);
+router.post('/pilots/buy', PilotController.buyPilot);
+router.post('/pilots/assign', PilotController.assignPilots);
+
+// Crate routes
+router.get('/crates', CrateController.getTeamCrates);
+router.get('/crates/can-claim-daily', CrateController.canClaimDaily);
+router.post('/crates/claim-daily', CrateController.claimDailyCrate);
+router.post('/crates/skip-wait', CrateController.skipWait);
+router.post('/crates/open', CrateController.openCrate);
+
+// Referral routes
+router.get('/referrals', ReferralController.getReferrals);
 
 // Race routes
 router.get('/race/season', RaceController.getActiveSeason);

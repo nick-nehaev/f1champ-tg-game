@@ -59,7 +59,8 @@ export class PlayerService {
   static async createTeam(
     playerId: number,
     name: string,
-    color: string
+    color: string,
+    referredBy?: number
   ): Promise<Team> {
     // Проверяем, есть ли уже команда
     const existing = await this.getPlayerTeam(playerId);
@@ -67,20 +68,38 @@ export class PlayerService {
       throw new Error('Player already has a team');
     }
 
-    // Создаем команду
-    const result = await query(
-      `INSERT INTO teams (player_id, name, color, budget)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [playerId, name, color, INITIAL_BUDGET]
-    );
+    // Начальная Max валюта
+    const initialMax = process.env.INITIAL_MAX_CURRENCY
+      ? parseInt(process.env.INITIAL_MAX_CURRENCY)
+      : 50;
 
-    const team = this.mapRowToTeam(result.rows[0]);
+    await query('BEGIN');
+    try {
+      // Создаем команду
+      const result = await query(
+        `INSERT INTO teams (player_id, name, color, budget, max_currency)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [playerId, name, color, INITIAL_BUDGET, initialMax]
+      );
 
-    // Создаем машину с базовыми компонентами
-    await this.createInitialCar(team.id);
+      const team = this.mapRowToTeam(result.rows[0]);
 
-    return team;
+      // Создаем машину с базовыми компонентами
+      await this.createInitialCar(team.id);
+
+      // Если есть реферер, создаем реферальную связь
+      if (referredBy && referredBy !== playerId) {
+        const { ReferralService } = await import('./referral.service');
+        await ReferralService.createReferral(referredBy, playerId);
+      }
+
+      await query('COMMIT');
+      return team;
+    } catch (error) {
+      await query('ROLLBACK');
+      throw error;
+    }
   }
 
   /**
@@ -141,6 +160,9 @@ export class PlayerService {
       name: row.name,
       color: row.color,
       budget: row.budget,
+      maxCurrency: row.max_currency || 0,
+      pilot1Id: row.pilot1_id,
+      pilot2Id: row.pilot2_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

@@ -15,6 +15,9 @@ export interface Team {
   name: string;
   color: string;
   budget: number;
+  maxCurrency: number; // Донатная валюта
+  pilot1Id?: number;
+  pilot2Id?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -167,9 +170,97 @@ export interface TelegramWebAppInitData {
   hash: string;
 }
 
+// Пилоты
+export interface Pilot {
+  id: number;
+  firstName: string;
+  lastName: string;
+  level: number; // 1-5
+  skill: number; // Навык пилота (влияет на результаты)
+  experience: number; // Опыт
+  consistency: number; // Стабильность
+  aggression: number; // Агрессивность
+  cost: number;
+  createdAt: Date;
+}
+
+// Квалификация
+export interface Qualification {
+  id: number;
+  raceId: number;
+  teamId: number;
+  position: number;
+  lapTime: number; // в миллисекундах
+  createdAt: Date;
+}
+
+// Наборы/Кейсы
+export enum CrateType {
+  DAILY = 'daily',
+  BRONZE = 'bronze',
+  SILVER = 'silver',
+  GOLD = 'gold',
+  SEASON_REWARD = 'season_reward'
+}
+
+export enum CrateStatus {
+  LOCKED = 'locked', // Заблокирован (нужно время или Max)
+  READY = 'ready',   // Готов к открытию
+  OPENED = 'opened'  // Открыт
+}
+
+export interface Crate {
+  id: number;
+  teamId: number;
+  type: CrateType;
+  status: CrateStatus;
+  lockedUntil?: Date; // Когда можно открыть
+  createdAt: Date;
+  openedAt?: Date;
+}
+
+export interface CrateReward {
+  id: number;
+  crateId: number;
+  rewardType: 'component' | 'pilot' | 'money' | 'max_currency';
+  rewardId?: number; // ID компонента или пилота
+  amount?: number; // Для денег или Max валюты
+  createdAt: Date;
+}
+
+// Реферальная система
+export interface Referral {
+  id: number;
+  referrerId: number; // Кто пригласил
+  referredId: number; // Кого пригласили
+  reward: number; // Награда за приглашение
+  createdAt: Date;
+}
+
+// Транзакции Max валюты
+export interface MaxTransaction {
+  id: number;
+  playerId: number;
+  amount: number;
+  type: 'purchase' | 'reward' | 'spend';
+  description: string;
+  telegramPaymentId?: string; // ID платежа через Telegram Stars
+  createdAt: Date;
+}
+
 // Константы игры
 export const RACE_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const FASTEST_LAP_POINTS = 1;
 export const INITIAL_BUDGET = 10000;
+export const INITIAL_MAX_CURRENCY = 50;
 export const RACE_INTERVAL_DAYS = 2;
 export const SEASON_DURATION_DAYS = 30;
+
+// Константы наборов
+export const DAILY_CRATE_COOLDOWN_HOURS = 24;
+export const CRATE_OPEN_TIME_SECONDS = 10;
+export const MAX_CURRENCY_TO_SKIP = 10;
+
+// Награды за реферала
+export const REFERRAL_REWARD_MONEY = 5000;
+export const REFERRAL_REWARD_MAX = 25;

@@ -1,6 +1,8 @@
 import cron from 'node-cron';
 import { RaceService } from './services/race.service';
-import { RACE_INTERVAL_DAYS } from '@f1champ/shared';
+import { CrateService } from './services/crate.service';
+import { query } from './db';
+import { RACE_INTERVAL_DAYS, CrateType } from '@f1champ/shared';
 
 /**
  * Планировщик задач для автоматического проведения гонок
@@ -129,6 +131,9 @@ export class Scheduler {
     try {
       const season = await RaceService.getActiveSeason();
       if (!season) {
+        console.log('No active season');
+        // Создаем новый сезон
+        await this.createNewSeason();
         return;
       }
 
@@ -136,12 +141,67 @@ export class Scheduler {
       const now = new Date();
 
       if (now > endDate) {
-        console.log('Season ended, starting new season');
-        // TODO: Завершить текущий сезон и создать новый
-        // Можно добавить награды победителям, обнулить очки и т.д.
+        console.log('Season ended, finalizing and starting new season');
+
+        // Получаем топ-5 команд сезона
+        const standings = await RaceService.getStandings(season.id);
+
+        // Выдаем призовые кейсы за сезон
+        for (let i = 0; i < Math.min(5, standings.length); i++) {
+          const standing = standings[i];
+
+          try {
+            // Топ-3 получают особые награды
+            if (i < 3) {
+              await CrateService.createPrizeCrate(
+                standing.teamId,
+                CrateType.SEASON_REWARD
+              );
+            }
+
+            // Все топ-5 получают золотые кейсы
+            await CrateService.createPrizeCrate(
+              standing.teamId,
+              CrateType.GOLD
+            );
+          } catch (error) {
+            console.error(`Error giving season rewards to team ${standing.teamId}:`, error);
+          }
+        }
+
+        // Завершаем текущий сезон
+        await query('UPDATE seasons SET is_active = false WHERE id = $1', [season.id]);
+
+        // Создаем новый сезон
+        await this.createNewSeason();
       }
     } catch (error) {
       console.error('Error checking season end:', error);
+    }
+  }
+
+  /**
+   * Создать новый сезон
+   */
+  private static async createNewSeason() {
+    try {
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 30); // 30 дней
+
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const seasonName = `Сезон ${year}-${month.toString().padStart(2, '0')}`;
+
+      await query(
+        `INSERT INTO seasons (name, start_date, end_date, is_active)
+         VALUES ($1, $2, $3, true)`,
+        [seasonName, now, endDate]
+      );
+
+      console.log(`New season created: ${seasonName}`);
+    } catch (error) {
+      console.error('Error creating new season:', error);
     }
   }
 

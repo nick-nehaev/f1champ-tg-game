@@ -37,14 +37,33 @@ export class PlayerController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { name, color } = req.body;
+      const { name, color, referralCode } = req.body;
 
       if (!name || !color) {
         return res.status(400).json({ error: 'Name and color are required' });
       }
 
       const player = await PlayerService.getOrCreatePlayer(req.user);
-      const team = await PlayerService.createTeam(player.id, name, color);
+
+      // Если есть реферальный код, находим реферера
+      let referrerId: number | undefined;
+      if (referralCode) {
+        const referrerResult = await import('../db').then((db) =>
+          db.query('SELECT id FROM players WHERE telegram_id = $1', [
+            parseInt(referralCode),
+          ])
+        );
+        if (referrerResult.rows.length > 0) {
+          referrerId = referrerResult.rows[0].id;
+        }
+      }
+
+      const team = await PlayerService.createTeam(
+        player.id,
+        name,
+        color,
+        referrerId
+      );
 
       const response: ApiResponse<any> = {
         success: true,
