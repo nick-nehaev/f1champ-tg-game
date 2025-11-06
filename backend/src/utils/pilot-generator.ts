@@ -1,26 +1,35 @@
 // Генератор случайных имен пилотов
 
 const FIRST_NAMES = [
-  'Alex', 'Max', 'Lewis', 'Sebastian', 'Fernando', 'Charles', 'Lando', 'Carlos',
-  'George', 'Daniel', 'Sergio', 'Pierre', 'Esteban', 'Lance', 'Yuki', 'Zhou',
-  'Kevin', 'Nico', 'Valtteri', 'Oscar', 'Logan', 'Nyck', 'Antonio', 'Mick',
-  'Jack', 'Robert', 'Felipe', 'Jenson', 'Kimi', 'Mark', 'David', 'Michael',
-  'Ralf', 'Rubens', 'Juan', 'Damon', 'Jacques', 'Mika', 'Nigel', 'Alain',
-  'Ayrton', 'Nelson', 'Emerson', 'Mario', 'Ronnie', 'James', 'Graham', 'Jim',
-  'Jackie', 'Niki', 'Clay', 'Phil', 'Bruce', 'Dan', 'Riccardo', 'Giancarlo',
-  'Andrea', 'Jarno', 'Heinz', 'Wolfgang', 'Hans', 'Jochen', 'Gerhard', 'Stefan'
+  'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph',
+  'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Donald',
+  'Mark', 'Paul', 'Steven', 'Andrew', 'Kenneth', 'George', 'Joshua', 'Kevin',
+  'Brian', 'Edward', 'Ronald', 'Timothy', 'Jason', 'Jeffrey', 'Ryan', 'Jacob',
+  'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott',
+  'Brandon', 'Frank', 'Benjamin', 'Gregory', 'Raymond', 'Samuel', 'Patrick',
+  'Alexander', 'Jack', 'Dennis', 'Jerry', 'Tyler', 'Aaron', 'Henry', 'Douglas',
+  'Peter', 'Kyle', 'Noah', 'Ethan', 'Jeremy', 'Walter', 'Christian', 'Keith',
+  'Roger', 'Terry', 'Austin', 'Sean', 'Gerald', 'Carl', 'Harold', 'Dylan',
+  'Arthur', 'Lawrence', 'Jordan', 'Jesse', 'Bryan', 'Billy', 'Bruce', 'Albert',
+  'Willie', 'Gabriel', 'Logan', 'Alan', 'Juan', 'Wayne', 'Roy', 'Ralph',
+  'Eugene', 'Randy', 'Vincent', 'Russell', 'Louis', 'Philip', 'Bobby', 'Johnny',
+  'Bradley', 'Dale', 'Martin', 'Carlos', 'Marcus', 'Victor', 'Oscar', 'Leonard'
 ];
 
 const LAST_NAMES = [
-  'Hamilton', 'Verstappen', 'Leclerc', 'Norris', 'Sainz', 'Russell', 'Ricciardo',
-  'Perez', 'Gasly', 'Ocon', 'Stroll', 'Tsunoda', 'Guanyu', 'Magnussen', 'Hulkenberg',
-  'Bottas', 'Piastri', 'Sargeant', 'De Vries', 'Giovinazzi', 'Schumacher', 'Alonso',
-  'Vettel', 'Raikkonen', 'Webber', 'Coulthard', 'Button', 'Barrichello', 'Montoya',
-  'Hill', 'Villeneuve', 'Hakkinen', 'Mansell', 'Prost', 'Senna', 'Piquet', 'Fittipaldi',
-  'Andretti', 'Peterson', 'Hunt', 'Stewart', 'Lauda', 'Regazzoni', 'Hill', 'McLaren',
-  'Moss', 'Fangio', 'Clark', 'Rindt', 'Ickx', 'Surtees', 'Brabham', 'Ascari',
-  'Nuvolari', 'Rossi', 'Trulli', 'Fisichella', 'Harald', 'Wolf', 'Stuck', 'Mass',
-  'Reutemann', 'Jones', 'Rosberg', 'Berger', 'Patrese', 'Brundle', 'Herbert'
+  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
+  'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson',
+  'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson',
+  'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker',
+  'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill',
+  'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell',
+  'Mitchell', 'Carter', 'Roberts', 'Gomez', 'Phillips', 'Evans', 'Turner', 'Diaz',
+  'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes', 'Stewart', 'Morris', 'Morales',
+  'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper', 'Peterson',
+  'Bailey', 'Reed', 'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson',
+  'Watson', 'Brooks', 'Chavez', 'Wood', 'James', 'Bennett', 'Gray', 'Mendoza',
+  'Ruiz', 'Hughes', 'Price', 'Alvarez', 'Castillo', 'Sanders', 'Patel', 'Myers',
+  'Long', 'Ross', 'Foster', 'Jimenez', 'Powell', 'Jenkins', 'Perry', 'Russell'
 ];
 
 export function generateRandomPilot(level: number): {

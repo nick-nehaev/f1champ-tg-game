@@ -262,7 +262,7 @@ export class RaceService {
       [seasonId]
     );
 
-    return result.rows.map((row, index) => ({
+    return result.rows.map((row: any, index: number) => ({
       teamId: row.team_id,
       teamName: row.team_name,
       teamColor: row.team_color,

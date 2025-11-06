@@ -81,4 +81,20 @@ export class CrateController {
       res.status(400).json({ success: false, error: error.message });
     }
   }
+
+  static async purchaseCrate(req: AuthRequest, res: Response) {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { crateType } = req.body;
+      const player = await PlayerService.getOrCreatePlayer(req.user);
+      const team = await PlayerService.getPlayerTeam(player.id);
+      if (!team) return res.status(404).json({ error: 'Team not found' });
+
+      const crate = await CrateService.purchaseCrate(team.id, crateType);
+      res.json({ success: true, data: crate });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
 }

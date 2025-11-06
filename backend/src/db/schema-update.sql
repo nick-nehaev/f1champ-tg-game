@@ -90,6 +90,17 @@ CREATE TABLE IF NOT EXISTS daily_crate_claims (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Таблица стратегий гонок
+CREATE TABLE IF NOT EXISTS race_strategies (
+    id SERIAL PRIMARY KEY,
+    race_id INTEGER REFERENCES races(id) ON DELETE CASCADE,
+    team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+    pit_stops JSONB NOT NULL, -- Массив объектов {lap: number, tireType: string}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(race_id, team_id)
+);
+
 -- Индексы
 CREATE INDEX IF NOT EXISTS idx_pilots_level ON pilots(level);
 CREATE INDEX IF NOT EXISTS idx_qualifications_race_id ON qualifications(race_id);
@@ -97,3 +108,5 @@ CREATE INDEX IF NOT EXISTS idx_crates_team_id ON crates(team_id);
 CREATE INDEX IF NOT EXISTS idx_crates_status ON crates(status);
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_max_transactions_player_id ON max_transactions(player_id);
+CREATE INDEX IF NOT EXISTS idx_race_strategies_race_id ON race_strategies(race_id);
+CREATE INDEX IF NOT EXISTS idx_race_strategies_team_id ON race_strategies(team_id);

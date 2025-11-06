@@ -7,6 +7,8 @@ import {
   DAILY_CRATE_COOLDOWN_HOURS,
   CRATE_OPEN_TIME_SECONDS,
   MAX_CURRENCY_TO_SKIP,
+  PurchasableCrateType,
+  PURCHASABLE_CRATES,
 } from '@f1champ/shared';
 import { PilotService } from './pilot.service';
 
@@ -70,7 +72,11 @@ export class CrateService {
    */
   static async createPrizeCrate(
     teamId: number,
-    type: CrateType.BRONZE | CrateType.SILVER | CrateType.GOLD
+    type:
+      | CrateType.BRONZE
+      | CrateType.SILVER
+      | CrateType.GOLD
+      | CrateType.SEASON_REWARD
   ): Promise<Crate> {
     const lockedUntil = new Date(Date.now() + CRATE_OPEN_TIME_SECONDS * 1000);
 
@@ -82,6 +88,61 @@ export class CrateService {
     );
 
     return this.mapRowToCrate(result.rows[0]);
+  }
+
+  /**
+   * Купить набор за обычную валюту
+   */
+  static async purchaseCrate(
+    teamId: number,
+    crateType: PurchasableCrateType
+  ): Promise<Crate> {
+    const crateConfig = PURCHASABLE_CRATES[crateType];
+
+    if (!crateConfig) {
+      throw new Error('Invalid crate type');
+    }
+
+    // Получаем команду
+    const teamResult = await query(
+      'SELECT budget FROM teams WHERE id = $1',
+      [teamId]
+    );
+
+    if (teamResult.rows.length === 0) {
+      throw new Error('Team not found');
+    }
+
+    const budget = teamResult.rows[0].budget;
+
+    if (budget < crateConfig.cost) {
+      throw new Error('Insufficient funds');
+    }
+
+    await query('BEGIN');
+    try {
+      // Списываем деньги
+      await query(
+        'UPDATE teams SET budget = budget - $1 WHERE id = $2',
+        [crateConfig.cost, teamId]
+      );
+
+      // Создаем набор (сразу доступный для открытия)
+      const lockedUntil = new Date(Date.now() + CRATE_OPEN_TIME_SECONDS * 1000);
+
+      const result = await query(
+        `INSERT INTO crates (team_id, type, status, locked_until)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [teamId, crateType, CrateStatus.LOCKED, lockedUntil]
+      );
+
+      await query('COMMIT');
+      return this.mapRowToCrate(result.rows[0]);
+    } catch (error) {
+      await query('ROLLBACK');
+      throw error;
+    }
   }
 
   /**
@@ -229,7 +290,7 @@ export class CrateService {
    */
   private static async generateRewards(
     teamId: number,
-    type: CrateType
+    type: string
   ): Promise<Array<{ rewardType: string; rewardId?: number; amount?: number }>> {
     const rewards: Array<{
       rewardType: string;
@@ -237,7 +298,7 @@ export class CrateService {
       amount?: number;
     }> = [];
 
-    const configs = {
+    const configs: Record<string, any> = {
       [CrateType.DAILY]: {
         money: { chance: 0.7, min: 500, max: 1500 },
         component: { chance: 0.25, level: [1, 2] },
@@ -268,16 +329,41 @@ export class CrateService {
         pilot: { chance: 0.15, level: [4, 5] },
         max: { chance: 0.05, amount: [20, 50] },
       },
+      // Покупаемые наборы
+      [PurchasableCrateType.BASIC]: {
+        money: { chance: 0.6, min: 300, max: 800 },
+        component: { chance: 0.39, level: [1, 1] },
+        pilot: { chance: 0.01, level: [1, 1] },
+        max: { chance: 0, amount: [0, 0] },
+      },
+      [PurchasableCrateType.STANDARD]: {
+        money: { chance: 0.5, min: 800, max: 2000 },
+        component: { chance: 0.48, level: [1, 2] },
+        pilot: { chance: 0.02, level: [1, 2] },
+        max: { chance: 0, amount: [0, 0] },
+      },
     };
 
     const config = configs[type];
-    const numRewards = type === CrateType.DAILY ? 1 : type === CrateType.SEASON_REWARD ? 5 : 2;
+
+    // Определяем количество наград
+    let numRewards = 1;
+    if (type === CrateType.SEASON_REWARD) {
+      numRewards = 5;
+    } else if (type === CrateType.BRONZE || type === CrateType.SILVER || type === CrateType.GOLD) {
+      numRewards = 2;
+    } else if (type === 'basic') {
+      numRewards = PURCHASABLE_CRATES[PurchasableCrateType.BASIC].rewardCount;
+    } else if (type === 'standard') {
+      numRewards = PURCHASABLE_CRATES[PurchasableCrateType.STANDARD].rewardCount;
+    }
 
     for (let i = 0; i < numRewards; i++) {
       const rand = Math.random();
       let cumulative = 0;
 
-      for (const [rewardType, settings] of Object.entries(config)) {
+      for (const [rewardType, settingsUnknown] of Object.entries(config)) {
+        const settings = settingsUnknown as any;
         cumulative += settings.chance;
 
         if (rand <= cumulative) {
