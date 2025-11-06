@@ -101,6 +101,22 @@ CREATE TABLE IF NOT EXISTS race_strategies (
     UNIQUE(race_id, team_id)
 );
 
+-- Таблица данных по кругам гонки (для визуализации)
+CREATE TABLE IF NOT EXISTS lap_data (
+    id SERIAL PRIMARY KEY,
+    race_id INTEGER REFERENCES races(id) ON DELETE CASCADE,
+    team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+    lap INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    lap_time INTEGER NOT NULL, -- в миллисекундах
+    tire_type VARCHAR(20) NOT NULL,
+    tire_age INTEGER NOT NULL, -- количество кругов на этих шинах
+    is_in_pit BOOLEAN DEFAULT false,
+    pit_time INTEGER, -- время в пит-лейн в миллисекундах
+    total_time BIGINT NOT NULL, -- общее время гонки в миллисекундах
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Индексы
 CREATE INDEX IF NOT EXISTS idx_pilots_level ON pilots(level);
 CREATE INDEX IF NOT EXISTS idx_qualifications_race_id ON qualifications(race_id);
@@ -110,3 +126,6 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_max_transactions_player_id ON max_transactions(player_id);
 CREATE INDEX IF NOT EXISTS idx_race_strategies_race_id ON race_strategies(race_id);
 CREATE INDEX IF NOT EXISTS idx_race_strategies_team_id ON race_strategies(team_id);
+CREATE INDEX IF NOT EXISTS idx_lap_data_race_id ON lap_data(race_id);
+CREATE INDEX IF NOT EXISTS idx_lap_data_team_id ON lap_data(team_id);
+CREATE INDEX IF NOT EXISTS idx_lap_data_race_lap ON lap_data(race_id, lap);

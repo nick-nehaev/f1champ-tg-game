@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { RaceService } from '../services/race.service';
+import { RaceSimulationService } from '../services/race-simulation.service';
 import { ApiResponse } from '@f1champ/shared';
 
 export class RaceController {
@@ -131,6 +132,49 @@ export class RaceController {
     } catch (error: any) {
       console.error('Error in runRace:', error);
       res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Получить lap data для гонки (для визуализации)
+   */
+  static async getLapData(req: AuthRequest, res: Response) {
+    try {
+      const { raceId } = req.params;
+      const lapData = await RaceSimulationService.getLapData(parseInt(raceId));
+
+      const response: ApiResponse<any> = {
+        success: true,
+        data: lapData,
+      };
+
+      res.json(response);
+    } catch (error: any) {
+      console.error('Error in getLapData:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Получить данные визуализации для конкретного круга
+   */
+  static async getVisualizationForLap(req: AuthRequest, res: Response) {
+    try {
+      const { raceId, lap } = req.params;
+      const visualization = await RaceSimulationService.getVisualizationForLap(
+        parseInt(raceId),
+        parseInt(lap)
+      );
+
+      const response: ApiResponse<any> = {
+        success: true,
+        data: visualization,
+      };
+
+      res.json(response);
+    } catch (error: any) {
+      console.error('Error in getVisualizationForLap:', error);
+      res.status(500).json({ success: false, error: error.message });
     }
   }
 }

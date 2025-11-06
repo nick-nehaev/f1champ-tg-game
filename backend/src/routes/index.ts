@@ -7,6 +7,7 @@ import { CrateController } from '../controllers/crate.controller';
 import { ReferralController } from '../controllers/referral.controller';
 import { StrategyController } from '../controllers/strategy.controller';
 import { CraftingController } from '../controllers/crafting.controller';
+import { PaymentController } from '../controllers/payment.controller';
 import { devAuth } from '../middleware/auth';
 
 const router = Router();
@@ -55,7 +56,14 @@ router.get('/race/season', RaceController.getActiveSeason);
 router.get('/race/races', RaceController.getSeasonRaces);
 router.get('/race/next', RaceController.getNextRace);
 router.get('/race/:raceId/results', RaceController.getRaceResults);
+router.get('/race/:raceId/lap-data', RaceController.getLapData);
+router.get('/race/:raceId/visualization/:lap', RaceController.getVisualizationForLap);
 router.get('/race/standings', RaceController.getStandings);
 router.post('/race/:raceId/run', RaceController.runRace); // только для разработки
+
+// Payment routes (Telegram Stars)
+router.get('/payment/max-packages', PaymentController.getMaxPackages);
+router.post('/payment/create-invoice', PaymentController.createMaxInvoice);
+router.post('/payment/webhook', PaymentController.handleSuccessfulPayment);
 
 export default router;

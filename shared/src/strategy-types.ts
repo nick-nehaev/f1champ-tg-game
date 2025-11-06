@@ -76,6 +76,33 @@ export interface CraftResult {
 
 // Визуализация гонки
 
+export interface LapData {
+  lap: number;
+  teamId: number;
+  position: number;
+  lapTime: number; // в миллисекундах
+  tireType: TireType;
+  tireAge: number; // количество кругов на этих шинах
+  isInPit: boolean;
+  pitTime?: number; // время в пит-лейн
+  totalTime: number; // общее время гонки
+}
+
+export interface RaceSimulationResult {
+  raceId: number;
+  trackName: string;
+  totalLaps: number;
+  lapData: LapData[]; // Все данные по кругам
+  finalResults: {
+    teamId: number;
+    position: number;
+    totalTime: number;
+    points: number;
+    dnf: boolean;
+    dnfReason?: string;
+  }[];
+}
+
 export interface RaceVisualizationData {
   totalLaps: number;
   currentLap: number;
@@ -90,6 +117,43 @@ export interface RaceVisualizationData {
     lapTime?: number;
   }[];
 }
+
+// Характеристики шин
+export interface TireCharacteristics {
+  speed: number;      // множитель скорости (0.9 - 1.1)
+  degradation: number; // скорость износа за круг
+  optimalLaps: number; // оптимальное количество кругов
+}
+
+export const TIRE_CHARACTERISTICS: Record<TireType, TireCharacteristics> = {
+  [TireType.SOFT]: {
+    speed: 1.1,
+    degradation: 0.05,
+    optimalLaps: 15
+  },
+  [TireType.MEDIUM]: {
+    speed: 1.0,
+    degradation: 0.03,
+    optimalLaps: 25
+  },
+  [TireType.HARD]: {
+    speed: 0.95,
+    degradation: 0.02,
+    optimalLaps: 35
+  },
+  [TireType.WET]: {
+    speed: 0.85,
+    degradation: 0.01,
+    optimalLaps: 50
+  },
+  [TireType.INTERMEDIATE]: {
+    speed: 0.9,
+    degradation: 0.015,
+    optimalLaps: 40
+  }
+};
+
+export const PIT_STOP_TIME = 25000; // 25 секунд в миллисекундах
 
 // Схемы трасс (упрощенные координаты для визуализации)
 
