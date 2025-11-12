@@ -26,7 +26,11 @@
 3. Выберите "Payments" → "Telegram Stars"
 4. Подтвердите включение Telegram Stars
 
-**Важно:** Telegram Stars доступны не во всех странах. Проверьте доступность в вашем регионе.
+**Важно:**
+- Telegram Stars доступны не во всех странах. Проверьте доступность в вашем регионе.
+- **Все оплаченные Stars автоматически зачисляются на баланс владельца бота!**
+- Проверить баланс: @BotFather → /mybots → ваш бот → Bot Settings → Telegram Stars Balance
+- Подробнее о балансе и выводе Stars: см. [STARS_BALANCE.md](STARS_BALANCE.md)
 
 ## Шаг 4: Деплой игры на GitHub Pages
 

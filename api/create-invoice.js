@@ -3,6 +3,15 @@
  *
  * Требуемые переменные окружения:
  * - BOT_TOKEN: токен вашего Telegram бота
+ *
+ * ВАЖНО: При использовании валюты XTR (Telegram Stars), все оплаченные Stars
+ * автоматически зачисляются на баланс владельца бота.
+ *
+ * Проверить баланс Stars можно через:
+ * - Telegram Bot API: getStarTransactions
+ * - Telegram приложение: @BotFather -> /mybots -> ваш бот -> Bot Settings -> Telegram Stars Balance
+ *
+ * Вывести Stars можно через @BotFather
  */
 
 const crypto = require('crypto');
