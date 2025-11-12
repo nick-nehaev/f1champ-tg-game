@@ -52,22 +52,22 @@ function validateTelegramWebAppData(initData, botToken) {
 const DONATION_PACKAGES = {
     10: {
         title: 'Little help',
-        description: '+5 дополнительных ходов в игре',
+        description: '+5 extra moves in game',
         bonus: 5
     },
     50: {
-        title: 'Поддержка разработчика',
-        description: '+30 дополнительных ходов в игре',
+        title: 'Good support',
+        description: '+30 extra moves in game',
         bonus: 30
     },
     100: {
-        title: 'Большая поддержка',
-        description: '+75 дополнительных ходов в игре',
+        title: 'Great support',
+        description: '+75 extra moves in game',
         bonus: 75
     },
     250: {
-        title: 'Супер поддержка!',
-        description: '+200 дополнительных ходов в игре',
+        title: 'Super support',
+        description: '+200 extra moves in game',
         bonus: 200
     }
 };
@@ -151,10 +151,17 @@ export default async function handler(req, res) {
                     label: packageInfo.title,
                     amount: stars // Для XTR amount = количество звезд
                 }
-            ]
+            ],
+            // Явно указываем, что дополнительные данные не нужны
+            need_name: false,
+            need_phone_number: false,
+            need_email: false,
+            need_shipping_address: false,
+            is_flexible: false
         };
 
         console.log('Sending request to Telegram API...');
+        console.log('Bot token (first 10 chars):', BOT_TOKEN.substring(0, 10) + '...');
         console.log('Invoice data:', JSON.stringify(invoiceData, null, 2));
 
         const response = await fetch(telegramApiUrl, {
@@ -166,6 +173,7 @@ export default async function handler(req, res) {
         });
 
         const data = await response.json();
+        console.log('Telegram API response status:', response.status);
         console.log('Telegram API response:', JSON.stringify(data, null, 2));
 
         if (!data.ok) {
@@ -179,6 +187,18 @@ export default async function handler(req, res) {
         }
 
         console.log('Invoice created successfully');
+        console.log('Invoice link:', data.result);
+        console.log('Invoice link type:', typeof data.result);
+        console.log('Invoice link starts with:', data.result ? data.result.substring(0, 50) : 'undefined');
+
+        // Проверяем формат ссылки
+        if (!data.result || typeof data.result !== 'string') {
+            console.error('Invalid invoice link format:', data.result);
+            return res.status(500).json({
+                error: 'Invalid invoice link format',
+                receivedLink: data.result
+            });
+        }
 
         // Возвращаем ссылку на invoice
         return res.status(200).json({

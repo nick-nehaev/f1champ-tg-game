@@ -993,6 +993,9 @@
 
                 const data = await response.json();
                 console.log('Invoice created:', data);
+                console.log('Invoice link:', data.invoiceLink);
+                console.log('Invoice link type:', typeof data.invoiceLink);
+                console.log('Invoice link length:', data.invoiceLink ? data.invoiceLink.length : 0);
                 tg.MainButton.hide();
 
                 if (!data.invoiceLink) {
@@ -1001,16 +1004,45 @@
                     return;
                 }
 
+                // Проверяем, что это строка и она начинается правильно
+                if (typeof data.invoiceLink !== 'string') {
+                    console.error('Invoice link is not a string:', typeof data.invoiceLink);
+                    tg.showAlert('Error: Invalid invoice link format');
+                    return;
+                }
+
+                console.log('Opening invoice with Telegram WebApp...');
+                console.log('Invoice link starts with:', data.invoiceLink.substring(0, 50));
+
+                // Проверяем доступность метода openInvoice
+                if (typeof tg.openInvoice !== 'function') {
+                    console.error('tg.openInvoice is not available!');
+                    console.log('Available tg methods:', Object.keys(tg));
+                    tg.showAlert('Error: Payment method not available in this Telegram version');
+                    return;
+                }
+
+                console.log('tg.openInvoice is available, calling it now...');
+
                 // Открываем форму оплаты
                 tg.openInvoice(data.invoiceLink, (status) => {
+                    console.log('Payment callback triggered!');
                     console.log('Payment status:', status);
+                    console.log('Payment status type:', typeof status);
+
                     if (status === 'paid') {
+                        console.log('Payment successful! Adding bonus moves...');
                         // Платеж успешен - добавляем бонусы
                         handleSuccessfulPayment(stars);
                     } else if (status === 'cancelled') {
+                        console.log('Payment was cancelled by user or system');
                         tg.showAlert('Payment cancelled');
                     } else if (status === 'failed') {
+                        console.log('Payment failed');
                         tg.showAlert('Payment failed');
+                    } else {
+                        console.log('Unknown payment status:', status);
+                        tg.showAlert('Unknown payment status: ' + status);
                     }
                 });
 
