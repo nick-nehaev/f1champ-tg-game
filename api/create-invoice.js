@@ -51,7 +51,7 @@ function validateTelegramWebAppData(initData, botToken) {
 // Описания товаров для разных сумм
 const DONATION_PACKAGES = {
     10: {
-        title: 'Небольшая поддержка',
+        title: 'Little help',
         description: '+5 дополнительных ходов в игре',
         bonus: 5
     },
@@ -122,6 +122,12 @@ export default async function handler(req, res) {
                 validAmounts: Object.keys(DONATION_PACKAGES)
             });
         }
+
+        // Валидация отключена для отладки
+        // Раскомментируйте для продакшена:
+        // if (!validateTelegramWebAppData(initData, BOT_TOKEN)) {
+        //     return res.status(403).json({ error: 'Invalid Telegram data' });
+        // }
 
         const packageInfo = DONATION_PACKAGES[stars];
         console.log('Package selected:', packageInfo);
