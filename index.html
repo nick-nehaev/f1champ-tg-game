@@ -975,7 +975,20 @@
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     console.error('Server error:', errorData);
-                    throw new Error(errorData.error || 'Payment creation failed');
+
+                    // Показываем подробную ошибку
+                    let errorMessage = 'Payment creation failed';
+                    if (errorData.telegramError) {
+                        errorMessage = `Telegram error: ${errorData.telegramError}`;
+                    } else if (errorData.details) {
+                        errorMessage = errorData.details;
+                    } else if (errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+
+                    tg.MainButton.hide();
+                    tg.showAlert(errorMessage);
+                    return;
                 }
 
                 const data = await response.json();
@@ -983,7 +996,9 @@
                 tg.MainButton.hide();
 
                 if (!data.invoiceLink) {
-                    throw new Error('No invoice link received');
+                    console.error('No invoice link in response:', data);
+                    tg.showAlert('Error: No invoice link received from server');
+                    return;
                 }
 
                 // Открываем форму оплаты

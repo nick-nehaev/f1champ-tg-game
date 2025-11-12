@@ -95,29 +95,36 @@ export default async function handler(req, res) {
 
     if (!BOT_TOKEN) {
         console.error('BOT_TOKEN not configured');
-        return res.status(500).json({ error: 'Server configuration error' });
+        return res.status(500).json({
+            error: 'Server configuration error',
+            details: 'BOT_TOKEN environment variable is not set'
+        });
     }
+
+    console.log('Received payment request');
 
     try {
         const { userId, stars, initData } = req.body;
 
+        console.log('Request data:', { userId, stars, hasInitData: !!initData });
+
         // Валидация входных данных
-        if (!userId || !stars || !initData) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!userId || !stars) {
+            console.error('Missing required fields');
+            return res.status(400).json({ error: 'Missing required fields: userId or stars' });
         }
 
         // Проверяем, что сумма валидна
         if (!DONATION_PACKAGES[stars]) {
-            return res.status(400).json({ error: 'Invalid donation amount' });
+            console.error('Invalid stars amount:', stars);
+            return res.status(400).json({
+                error: 'Invalid donation amount',
+                validAmounts: Object.keys(DONATION_PACKAGES)
+            });
         }
 
-        // Валидация данных от Telegram (в продакшене обязательно!)
-        // Раскомментируйте для продакшена:
-        // if (!validateTelegramWebAppData(initData, BOT_TOKEN)) {
-        //     return res.status(403).json({ error: 'Invalid Telegram data' });
-        // }
-
         const packageInfo = DONATION_PACKAGES[stars];
+        console.log('Package selected:', packageInfo);
 
         // Создаем invoice через Telegram Bot API
         const telegramApiUrl = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
@@ -141,6 +148,9 @@ export default async function handler(req, res) {
             ]
         };
 
+        console.log('Sending request to Telegram API...');
+        console.log('Invoice data:', JSON.stringify(invoiceData, null, 2));
+
         const response = await fetch(telegramApiUrl, {
             method: 'POST',
             headers: {
@@ -150,14 +160,19 @@ export default async function handler(req, res) {
         });
 
         const data = await response.json();
+        console.log('Telegram API response:', JSON.stringify(data, null, 2));
 
         if (!data.ok) {
-            console.error('Telegram API error:', data);
+            console.error('Telegram API returned error:', data);
             return res.status(500).json({
                 error: 'Failed to create invoice',
-                details: data.description
+                telegramError: data.description,
+                errorCode: data.error_code,
+                fullResponse: data
             });
         }
+
+        console.log('Invoice created successfully');
 
         // Возвращаем ссылку на invoice
         return res.status(200).json({
@@ -166,10 +181,11 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('Error creating invoice:', error);
+        console.error('Exception in handler:', error);
         return res.status(500).json({
             error: 'Internal server error',
-            message: error.message
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 }
