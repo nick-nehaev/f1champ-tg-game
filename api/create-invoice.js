@@ -113,9 +113,9 @@ export default async function handler(req, res) {
 
         // Валидация данных от Telegram (в продакшене обязательно!)
         // Раскомментируйте для продакшена:
-        // if (!validateTelegramWebAppData(initData, BOT_TOKEN)) {
-        //     return res.status(403).json({ error: 'Invalid Telegram data' });
-        // }
+        if (!validateTelegramWebAppData(initData, BOT_TOKEN)) {
+            return res.status(403).json({ error: 'Invalid Telegram data' });
+        }
 
         const packageInfo = DONATION_PACKAGES[stars];
 
