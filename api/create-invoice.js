@@ -131,6 +131,7 @@ export default async function handler(req, res) {
                 bonus: packageInfo.bonus,
                 timestamp: Date.now()
             }),
+            provider_token: '', // Для XTR (Telegram Stars) должно быть пустым
             currency: 'XTR', // Telegram Stars
             prices: [
                 {
