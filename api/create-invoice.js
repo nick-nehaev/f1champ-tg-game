@@ -51,7 +51,7 @@ function validateTelegramWebAppData(initData, botToken) {
 // Описания товаров для разных сумм
 const DONATION_PACKAGES = {
     10: {
-        title: 'Небольшая поддержка',
+        title: 'Little help',
         description: '+5 дополнительных ходов в игре',
         bonus: 5
     },
