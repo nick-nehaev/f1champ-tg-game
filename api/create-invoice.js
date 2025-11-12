@@ -1,0 +1,165 @@
+/**
+ * Vercel Serverless Function для создания Telegram Stars Invoice
+ *
+ * Требуемые переменные окружения:
+ * - BOT_TOKEN: токен вашего Telegram бота
+ */
+
+const crypto = require('crypto');
+
+// Проверка подписи Telegram WebApp
+function validateTelegramWebAppData(initData, botToken) {
+    try {
+        const params = new URLSearchParams(initData);
+        const hash = params.get('hash');
+        params.delete('hash');
+
+        // Сортируем параметры
+        const dataCheckString = Array.from(params.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, value]) => `${key}=${value}`)
+            .join('\n');
+
+        // Создаем секретный ключ
+        const secretKey = crypto
+            .createHmac('sha256', 'WebAppData')
+            .update(botToken)
+            .digest();
+
+        // Вычисляем hash
+        const calculatedHash = crypto
+            .createHmac('sha256', secretKey)
+            .update(dataCheckString)
+            .digest('hex');
+
+        return calculatedHash === hash;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return false;
+    }
+}
+
+// Описания товаров для разных сумм
+const DONATION_PACKAGES = {
+    10: {
+        title: 'Небольшая поддержка',
+        description: '+5 дополнительных ходов в игре',
+        bonus: 5
+    },
+    50: {
+        title: 'Поддержка разработчика',
+        description: '+30 дополнительных ходов в игре',
+        bonus: 30
+    },
+    100: {
+        title: 'Большая поддержка',
+        description: '+75 дополнительных ходов в игре',
+        bonus: 75
+    },
+    250: {
+        title: 'Супер поддержка!',
+        description: '+200 дополнительных ходов в игре',
+        bonus: 200
+    }
+};
+
+export default async function handler(req, res) {
+    // Разрешаем CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+
+    if (!BOT_TOKEN) {
+        console.error('BOT_TOKEN not configured');
+        return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    try {
+        const { userId, stars, initData } = req.body;
+
+        // Валидация входных данных
+        if (!userId || !stars || !initData) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Проверяем, что сумма валидна
+        if (!DONATION_PACKAGES[stars]) {
+            return res.status(400).json({ error: 'Invalid donation amount' });
+        }
+
+        // Валидация данных от Telegram (в продакшене обязательно!)
+        // Раскомментируйте для продакшена:
+        // if (!validateTelegramWebAppData(initData, BOT_TOKEN)) {
+        //     return res.status(403).json({ error: 'Invalid Telegram data' });
+        // }
+
+        const packageInfo = DONATION_PACKAGES[stars];
+
+        // Создаем invoice через Telegram Bot API
+        const telegramApiUrl = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
+
+        const invoiceData = {
+            title: packageInfo.title,
+            description: packageInfo.description,
+            payload: JSON.stringify({
+                userId: userId,
+                stars: stars,
+                bonus: packageInfo.bonus,
+                timestamp: Date.now()
+            }),
+            currency: 'XTR', // Telegram Stars
+            prices: [
+                {
+                    label: packageInfo.title,
+                    amount: stars // Для XTR amount = количество звезд
+                }
+            ]
+        };
+
+        const response = await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(invoiceData)
+        });
+
+        const data = await response.json();
+
+        if (!data.ok) {
+            console.error('Telegram API error:', data);
+            return res.status(500).json({
+                error: 'Failed to create invoice',
+                details: data.description
+            });
+        }
+
+        // Возвращаем ссылку на invoice
+        return res.status(200).json({
+            success: true,
+            invoiceLink: data.result
+        });
+
+    } catch (error) {
+        console.error('Error creating invoice:', error);
+        return res.status(500).json({
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+}
