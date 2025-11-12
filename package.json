@@ -1,0 +1,18 @@
+{
+  "name": "match3-telegram-game",
+  "version": "1.0.0",
+  "description": "Match-3 game for Telegram WebApp with Stars donations",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "telegram",
+    "game",
+    "match3",
+    "stars"
+  ],
+  "author": "",
+  "license": "MIT"
+}
